@@ -18,7 +18,8 @@ app.secret_key = "topsis-web-service-secret-key"
 # ── SMTP Configuration ──────────────────────────────────────────────
 # The user MUST set these environment variables (or edit them here)
 SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
-SMTP_PORT = int(os.environ.get("SMTP_PORT", 587))
+SMTP_PORT = int(os.environ.get("SMTP_PORT", 465))
+SMTP_USE_SSL = os.environ.get("SMTP_USE_SSL", "true").lower() == "true"
 SMTP_EMAIL = os.environ.get("SMTP_EMAIL", "")      # sender email
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")  # app password
 
@@ -91,10 +92,15 @@ def send_email(to_email, result_df):
     )
     msg.attach(attachment)
 
-    with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
-        server.starttls()
-        server.login(SMTP_EMAIL, SMTP_PASSWORD)
-        server.send_message(msg)
+    if SMTP_USE_SSL:
+        with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, timeout=10) as server:
+            server.login(SMTP_EMAIL, SMTP_PASSWORD)
+            server.send_message(msg)
+    else:
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10) as server:
+            server.starttls()
+            server.login(SMTP_EMAIL, SMTP_PASSWORD)
+            server.send_message(msg)
 
 
 # ── Validation Helpers ──────────────────────────────────────────────
